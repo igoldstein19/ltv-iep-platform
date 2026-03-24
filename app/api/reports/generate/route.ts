@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getStudentById, saveReport } from '@/lib/store'
 import { generateProgressReport } from '@/lib/claude'
 import { calculateTrend } from '@/lib/utils'
 import { format } from 'date-fns'
@@ -25,25 +25,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch student with all data
-    const student = await prisma.student.findFirst({
-      where: { id: studentId, teacherId: userId },
-      include: {
-        goals: {
-          include: {
-            progressEntries: {
-              orderBy: { date: 'asc' },
-            },
-          },
-        },
-      },
-    })
+    const student = getStudentById(studentId, userId)
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
 
-    // Build report data
     const goalsData = student.goals.map((goal) => {
       const entries = goal.progressEntries
       const scores = entries
@@ -86,14 +73,11 @@ export async function POST(request: NextRequest) {
 
     const generatedReport = await generateProgressReport(reportData)
 
-    // Save to database
-    const report = await prisma.report.create({
-      data: {
-        studentId,
-        reportingPeriod,
-        content: JSON.stringify(generatedReport),
-        teacherId: userId,
-      },
+    const report = saveReport({
+      studentId,
+      teacherId: userId,
+      reportingPeriod,
+      content: JSON.stringify(generatedReport),
     })
 
     return NextResponse.json({

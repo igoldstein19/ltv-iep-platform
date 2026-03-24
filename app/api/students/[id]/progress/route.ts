@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getStudentById, getProgressEntries, addProgressEntry } from '@/lib/store'
 
 export async function GET(
   request: NextRequest,
@@ -14,24 +14,13 @@ export async function GET(
     }
 
     const userId = (session.user as any).id
-
-    // Verify student ownership
-    const student = await prisma.student.findFirst({
-      where: { id: params.id, teacherId: userId },
-    })
+    const student = getStudentById(params.id, userId)
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
 
-    const entries = await prisma.progressEntry.findMany({
-      where: { studentId: params.id },
-      include: {
-        goal: true,
-      },
-      orderBy: { date: 'desc' },
-    })
-
+    const entries = getProgressEntries(params.id, userId)
     return NextResponse.json(entries)
   } catch (error) {
     console.error('GET /api/students/[id]/progress error:', error)
@@ -50,46 +39,32 @@ export async function POST(
     }
 
     const userId = (session.user as any).id
-    const body = await request.json()
-
-    // Verify student ownership
-    const student = await prisma.student.findFirst({
-      where: { id: params.id, teacherId: userId },
-    })
+    const student = getStudentById(params.id, userId)
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
 
+    const body = await request.json()
     const { goalId, date, score, notes, promptLevel } = body
 
     if (!goalId) {
       return NextResponse.json({ error: 'Goal ID is required' }, { status: 400 })
     }
 
-    // Verify goal belongs to this student
-    const goal = await prisma.goal.findFirst({
-      where: { id: goalId, studentId: params.id },
+    const entry = addProgressEntry({
+      studentId: params.id,
+      goalId,
+      date: date || new Date().toISOString(),
+      score: score !== undefined && score !== null ? parseFloat(score) : null,
+      notes: notes || null,
+      promptLevel: promptLevel || null,
+      teacherId: userId,
     })
 
-    if (!goal) {
+    if (!entry) {
       return NextResponse.json({ error: 'Goal not found' }, { status: 404 })
     }
-
-    const entry = await prisma.progressEntry.create({
-      data: {
-        studentId: params.id,
-        goalId,
-        date: date ? new Date(date) : new Date(),
-        score: score !== undefined && score !== null ? parseFloat(score) : null,
-        notes: notes || null,
-        promptLevel: promptLevel || null,
-        teacherId: userId,
-      },
-      include: {
-        goal: true,
-      },
-    })
 
     return NextResponse.json(entry, { status: 201 })
   } catch (error) {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/db'
+import { getStudentById, updateStudent, deleteStudent } from '@/lib/store'
 
 export async function GET(
   request: NextRequest,
@@ -14,30 +14,7 @@ export async function GET(
     }
 
     const userId = (session.user as any).id
-
-    const student = await prisma.student.findFirst({
-      where: {
-        id: params.id,
-        teacherId: userId,
-      },
-      include: {
-        goals: {
-          include: {
-            progressEntries: {
-              orderBy: { date: 'asc' },
-            },
-          },
-          orderBy: { createdAt: 'asc' },
-        },
-        progressEntries: {
-          orderBy: { date: 'desc' },
-        },
-        reports: {
-          orderBy: { generatedAt: 'desc' },
-          take: 5,
-        },
-      },
-    })
+    const student = getStudentById(params.id, userId)
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
@@ -63,35 +40,18 @@ export async function PUT(
     const userId = (session.user as any).id
     const body = await request.json()
 
-    // Verify ownership
-    const existing = await prisma.student.findFirst({
-      where: { id: params.id, teacherId: userId },
+    const updated = updateStudent(params.id, userId, {
+      name: body.name,
+      grade: body.grade,
+      dateOfBirth: body.dateOfBirth || null,
+      disabilityCategory: body.disabilityCategory || null,
+      iepStartDate: body.iepStartDate || null,
+      iepEndDate: body.iepEndDate || null,
     })
 
-    if (!existing) {
+    if (!updated) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
-
-    const updated = await prisma.student.update({
-      where: { id: params.id },
-      data: {
-        name: body.name,
-        grade: body.grade,
-        dateOfBirth: body.dateOfBirth ? new Date(body.dateOfBirth) : null,
-        disabilityCategory: body.disabilityCategory || null,
-        iepStartDate: body.iepStartDate ? new Date(body.iepStartDate) : null,
-        iepEndDate: body.iepEndDate ? new Date(body.iepEndDate) : null,
-      },
-      include: {
-        goals: {
-          include: {
-            progressEntries: {
-              orderBy: { date: 'asc' },
-            },
-          },
-        },
-      },
-    })
 
     return NextResponse.json(updated)
   } catch (error) {
@@ -111,18 +71,11 @@ export async function DELETE(
     }
 
     const userId = (session.user as any).id
+    const success = deleteStudent(params.id, userId)
 
-    const existing = await prisma.student.findFirst({
-      where: { id: params.id, teacherId: userId },
-    })
-
-    if (!existing) {
+    if (!success) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 })
     }
-
-    await prisma.student.delete({
-      where: { id: params.id },
-    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
