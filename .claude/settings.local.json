@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npm install:*)",
+      "Bash(npm cache:*)",
+      "Bash(npm --version)",
+      "Bash(npm view:*)",
+      "Bash(npx prisma:*)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx prisma db push)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx ts-node --compiler-options '{\"\"module\"\":\"\"CommonJS\"\"}' prisma/seed.ts)",
+      "Bash(npx tsc:*)",
+      "Bash(DATABASE_URL=\"file:./dev.db\" npx next build)",
+      "Bash(npx next:*)",
+      "Bash(open \"/Users/isaacgoldstein/Documents/_Waypoint/Claude Code/.env.local\")",
+      "Bash(npm run:*)"
+    ]
+  }
+}
