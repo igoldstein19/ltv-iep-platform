@@ -1,7 +1,24 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import bcrypt from 'bcryptjs'
-import { prisma } from './db'
+
+const DEMO_USERS = [
+  {
+    id: 'teacher-1',
+    email: 'teacher1@waypoint.edu',
+    password: 'password123',
+    name: 'Sarah Johnson',
+    gradeRange: 'Grades 3-5',
+    school: 'Lincoln Elementary',
+  },
+  {
+    id: 'teacher-2',
+    email: 'teacher2@waypoint.edu',
+    password: 'password123',
+    name: 'Marcus Williams',
+    gradeRange: 'Grades 6-8',
+    school: 'Lincoln Elementary',
+  },
+]
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -22,20 +39,8 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        })
-
-        if (!user) {
-          return null
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
-
-        if (!isPasswordValid) {
+        const user = DEMO_USERS.find(u => u.email === credentials.email)
+        if (!user || user.password !== credentials.password) {
           return null
         }
 
