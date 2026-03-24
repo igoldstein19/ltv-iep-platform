@@ -22,7 +22,7 @@ export async function extractIEPFromText(
   studentName: string
 ): Promise<ExtractedIEPData> {
   const message = await anthropic.messages.create({
-    model: 'claude-opus-4-5',
+    model: 'claude-sonnet-4-6',
     max_tokens: 2000,
     messages: [
       {
@@ -156,7 +156,7 @@ Return ONLY a valid JSON object (no markdown) with this structure:
 }`
 
   const message = await anthropic.messages.create({
-    model: 'claude-opus-4-5',
+    model: 'claude-sonnet-4-6',
     max_tokens: 3000,
     messages: [
       {
