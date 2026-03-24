@@ -86,6 +86,9 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('POST /api/reports/generate error:', error)
-    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 })
+    return NextResponse.json({
+      error: 'Failed to generate report',
+      detail: error?.message || String(error),
+    }, { status: 500 })
   }
 }
